@@ -5024,10 +5024,12 @@ static void wiphy_info_mbssid(struct wpa_driver_capa *cap, struct nlattr *attr)
     struct nlattr *config[NL80211_MBSSID_CONFIG_ATTR_MAX + 1];
 
     if (nla_parse_nested(config, NL80211_MBSSID_CONFIG_ATTR_MAX, attr, NULL) != 0) {
+        wifi_hal_error_print("%s:%d failed to parse mbssid config", __func__, __LINE__);
         return;
     }
 
-    if (config[NL80211_MBSSID_CONFIG_ATTR_MAX_INTERFACES] != NULL) {
+    if (config[NL80211_MBSSID_CONFIG_ATTR_MAX_INTERFACES] == NULL) {
+        wifi_hal_error_print("%s:%d failed to get max mbssid interfaces", __func__, __LINE__);
         return;
     }
 
