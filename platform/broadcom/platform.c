@@ -1244,7 +1244,7 @@ int platform_set_radio(wifi_radio_index_t index, wifi_radio_operationParam_t *op
     return 0;
 }
 
-#if defined(TCXB7_PORT) || defined(TCXB8_PORT)
+#if defined(TCXB7_PORT) || defined(TCXB8_PORT) || defined(XB10_PORT) || defined(SCXER10_PORT)
 
 #define ASSOC_DRIVER_CTRL 0
 #define ASSOC_HOSTAP_STATUS_CTRL 1
@@ -1321,7 +1321,7 @@ static int platform_set_hostap_ctrl(wifi_radio_info_t *radio, uint vap_index, in
 
     return RETURN_OK;
 }
-#endif // TCXB7_PORT || TCXB8_PORT
+#endif // TCXB7_PORT || TCXB8_PORT || XB10_PORT || SCXER10_PORT
 
 int platform_create_vap(wifi_radio_index_t r_index, wifi_vap_info_map_t *map)
 {
@@ -1363,10 +1363,10 @@ int platform_create_vap(wifi_radio_index_t r_index, wifi_vap_info_map_t *map)
         set_decimal_nvram_param(param_name, 1);
 
         if (map->vap_array[index].vap_mode == wifi_vap_mode_ap) {
-#if defined(TCXB7_PORT) || defined(TCXB8_PORT)
+#if defined(TCXB7_PORT) || defined(TCXB8_PORT) || defined(XB10_PORT) || defined(SCXER10_PORT)
             platform_set_hostap_ctrl(radio, map->vap_array[index].vap_index,
                 map->vap_array[index].u.bss_info.hostap_mgt_frame_ctrl);
-#endif
+#endif // TCXB7_PORT || TCXB8_PORT || XB10_PORT || SCXER10_PORT
             prepare_param_name(param_name, interface_name, "_akm");
             memset(temp_buff, 0 ,sizeof(temp_buff));
             if (get_security_mode_str_from_int(map->vap_array[index].u.bss_info.security.mode, map->vap_array[index].vap_index, temp_buff) == RETURN_OK) {
