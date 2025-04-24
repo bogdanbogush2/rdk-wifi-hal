@@ -3915,6 +3915,8 @@ static int phy_info_rates(wifi_radio_info_t *radio, struct hostapd_hw_modes *mod
             continue;
         mode->num_rates++;
     }
+    wifi_hal_dbg_print("%s:%d: NL debug: radio: %d band: %d mode: %d num_rates: %d\n",
+        __func__, __LINE__, radio->index, band, mode->mode, mode->num_rates);
 
     mode->rates = radio->rates[band];
 
@@ -3929,6 +3931,8 @@ static int phy_info_rates(wifi_radio_info_t *radio, struct hostapd_hw_modes *mod
         }
         mode->rates[idx] = nla_get_u32(tb_rate[NL80211_BITRATE_ATTR_RATE]);
         //wifi_hal_dbg_print("%d\n", mode->rates[idx]);
+        wifi_hal_dbg_print("%s:%d: NL debug: radio: %d band: %d mode: %d rate: %d\n", __func__,
+            __LINE__, radio->index, band, mode->mode, mode->rates[idx]);
         idx++;
     }
 
@@ -3943,19 +3947,32 @@ static void phy_info_ht_capa(struct hostapd_hw_modes *mode, struct nlattr *capa,
                  struct nlattr *ampdu_density,
                  struct nlattr *mcs_set)
 {
-    if (capa)
+    if (capa) {
         mode->ht_capab = nla_get_u16(capa);
+        wifi_hal_dbg_print("%s:%d: NL debug: mode: %d ht capa: 0x%02x\n", __func__, __LINE__,
+            mode->mode, mode->ht_capab);
+    }
 
-    if (ampdu_factor)
+    if (ampdu_factor) {
         mode->a_mpdu_params |= nla_get_u8(ampdu_factor) & 0x03;
+        wifi_hal_dbg_print("%s:%d: NL debug: mode: %d ampdu_factor: %d\n", __func__, __LINE__,
+            mode->mode, nla_get_u8(ampdu_factor));
+    }
 
-    if (ampdu_density)
+    if (ampdu_density) {
         mode->a_mpdu_params |= nla_get_u8(ampdu_density) << 2;
+        wifi_hal_dbg_print("%s:%d: NL debug: mode: %d ampdu_density: %d\n", __func__, __LINE__,
+            mode->mode, nla_get_u8(ampdu_density));
+    }
 
     if (mcs_set && nla_len(mcs_set) >= 16) {
         u8 *mcs;
         mcs = nla_data(mcs_set);
         os_memcpy(mode->mcs_set, mcs, 16);
+        wifi_hal_dbg_print("%s:%d: NL debug: mode: %d ht mcs: \n", __func__, __LINE__, mode->mode);
+        for (int i = 0; i < 16; i++) {
+            wifi_hal_dbg_print("0x%02x\n", mode->mcs_set[i]);
+        }
     }
 }
 
@@ -3964,13 +3981,21 @@ static void phy_info_vht_capa(struct hostapd_hw_modes *mode,
                   struct nlattr *capa,
                   struct nlattr *mcs_set)
 {
-    if (capa)
+    if (capa) {
         mode->vht_capab = nla_get_u32(capa);
+        wifi_hal_dbg_print("%s:%d: NL debug: mode: %d vht capa: 0x%x\n", __func__, __LINE__,
+            mode->mode, mode->vht_capab);
+    }
 
     if (mcs_set && nla_len(mcs_set) >= 8) {
         u8 *mcs;
         mcs = nla_data(mcs_set);
         os_memcpy(mode->vht_mcs_set, mcs, 8);
+
+        wifi_hal_dbg_print("%s:%d: NL debug: mode: %d vht mcs: \n", __func__, __LINE__, mode->mode);
+        for (int i = 0; i < 8; i++) {
+            wifi_hal_dbg_print("0x%02x\n", mode->vht_mcs_set[i]);
+        }
     }
 }
 
@@ -4221,6 +4246,9 @@ static void phy_info_iftype_copy(struct hostapd_hw_modes *mode,
 
     he_capab->he_supported = 1;
 
+    wifi_hal_dbg_print("%s:%d: NL debug: opmode: %d tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_PHY]: %p\n",
+        __func__, __LINE__, opmode, tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_PHY]);
+
     if (tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_PHY]) {
         len = nla_len(tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_PHY]);
 
@@ -4231,8 +4259,15 @@ static void phy_info_iftype_copy(struct hostapd_hw_modes *mode,
         os_memcpy(he_capab->phy_cap,
               nla_data(tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_PHY]),
               len);
+        wifi_hal_dbg_print("%s:%d: NL debug: opmode: %d he cap phy: \n", __func__, __LINE__,
+            opmode);
+        for (int i = 0; i < len; i++) {
+            wifi_hal_dbg_print("0x%02x\n", he_capab->phy_cap[i]);
+        }
     }
 
+    wifi_hal_dbg_print("%s:%d: NL debug: opmode: %d tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_MAC]: %p\n",
+        __func__, __LINE__, opmode, tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_MAC]);
     if (tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_MAC]) {
         len = nla_len(tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_MAC]);
 
@@ -4243,8 +4278,17 @@ static void phy_info_iftype_copy(struct hostapd_hw_modes *mode,
         os_memcpy(he_capab->mac_cap,
               nla_data(tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_MAC]),
               len);
+
+        wifi_hal_dbg_print("%s:%d: NL debug: opmode: %d he cap mac: \n", __func__, __LINE__,
+            opmode);
+        for (int i = 0; i < len; i++) {
+            wifi_hal_dbg_print("0x%02x\n", he_capab->mac_cap[i]);
+        }
     }
 
+    wifi_hal_dbg_print(
+        "%s:%d: NL debug: opmode: %d tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_MCS_SET]: %p\n", __func__,
+        __LINE__, opmode, tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_MCS_SET]);
     if (tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_MCS_SET]) {
         len = nla_len(tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_MCS_SET]);
 
@@ -4255,8 +4299,16 @@ static void phy_info_iftype_copy(struct hostapd_hw_modes *mode,
         os_memcpy(he_capab->mcs,
               nla_data(tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_MCS_SET]),
               len);
+
+        wifi_hal_dbg_print("%s:%d: NL debug: opmode: %d he cap mcs: \n", __func__, __LINE__,
+            opmode);
+        for (int i = 0; i < len; i++) {
+            wifi_hal_dbg_print("0x%02x\n", he_capab->mcs[i]);
+        }
     }
 
+    wifi_hal_dbg_print("%s:%d: NL debug: opmode: %d tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_PPE]: %p\n",
+        __func__, __LINE__, opmode, tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_PPE]);
     if (tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_PPE]) {
         len = nla_len(tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_PPE]);
 
@@ -4267,19 +4319,36 @@ static void phy_info_iftype_copy(struct hostapd_hw_modes *mode,
         os_memcpy(&he_capab->ppet,
               nla_data(tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_PPE]),
               len);
+
+        wifi_hal_dbg_print("%s:%d: NL debug: opmode: %d he cap ppet: \n", __func__, __LINE__,
+            opmode);
+        for (int i = 0; i < len; i++) {
+            wifi_hal_dbg_print("0x%02x\n", he_capab->ppet[i]);
+        }
     }
 
 #if HOSTAPD_VERSION >= 210
+    wifi_hal_dbg_print(
+        "%s:%d: NL debug: opmode: %d tb[NL80211_BAND_IFTYPE_ATTR_HE_6GHZ_CAPA]: %p\n", __func__,
+        __LINE__, opmode, tb[NL80211_BAND_IFTYPE_ATTR_HE_6GHZ_CAPA]);
     if (tb[NL80211_BAND_IFTYPE_ATTR_HE_6GHZ_CAPA]) {
         u16 capa;
 
         capa = nla_get_u16(tb[NL80211_BAND_IFTYPE_ATTR_HE_6GHZ_CAPA]);
         he_capab->he_6ghz_capa = le_to_host16(capa);
+        wifi_hal_dbg_print("%s:%d: NL debug: he_6ghz_capa: 0x02%x\n", __func__, __LINE__,
+            he_capab->he_6ghz_capa);
     }
 #endif /* HOSTAPD_VERSION >= 210 */
 
 #ifdef CONFIG_IEEE80211BE
     struct eht_capabilities *eht_capab = &mode->eht_capab[opmode];
+
+    wifi_hal_dbg_print("%s:%d: NL debug: opmode: %d tb[NL80211_BAND_IFTYPE_ATTR_EHT_CAP_MAC]: %p\n",
+        __func__, __LINE__, opmode, tb[NL80211_BAND_IFTYPE_ATTR_EHT_CAP_MAC]);
+
+    wifi_hal_dbg_print("%s:%d: NL debug: opmode: %d tb[NL80211_BAND_IFTYPE_ATTR_EHT_CAP_PHY]: %p\n",
+        __func__, __LINE__, opmode, tb[NL80211_BAND_IFTYPE_ATTR_EHT_CAP_PHY]);
 
     if (!tb[NL80211_BAND_IFTYPE_ATTR_EHT_CAP_MAC] ||
         !tb[NL80211_BAND_IFTYPE_ATTR_EHT_CAP_PHY]) {
@@ -4297,8 +4366,17 @@ static void phy_info_iftype_copy(struct hostapd_hw_modes *mode,
         os_memcpy(eht_capab->phy_cap,
               nla_data(tb[NL80211_BAND_IFTYPE_ATTR_EHT_CAP_PHY]),
               len);
+
+        wifi_hal_dbg_print("%s:%d: NL debug: opmode: %d eht phy cap: \n", __func__, __LINE__,
+            opmode);
+        for (int i = 0; i < len; i++) {
+            wifi_hal_dbg_print("0x%02x\n", eht_capab->phy_cap[i]);
+        }
     }
 
+    wifi_hal_dbg_print(
+        "%s:%d: NL debug: opmode: %d tb[NL80211_BAND_IFTYPE_ATTR_EHT_CAP_MCS_SET]: %p\n", __func__,
+        __LINE__, opmode, tb[NL80211_BAND_IFTYPE_ATTR_EHT_CAP_MCS_SET]);
     if (tb[NL80211_BAND_IFTYPE_ATTR_EHT_CAP_MCS_SET]) {
         len = nla_len(tb[NL80211_BAND_IFTYPE_ATTR_EHT_CAP_MCS_SET]);
         if (len > sizeof(eht_capab->mcs)) {
@@ -4308,8 +4386,16 @@ static void phy_info_iftype_copy(struct hostapd_hw_modes *mode,
         os_memcpy(eht_capab->mcs,
               nla_data(tb[NL80211_BAND_IFTYPE_ATTR_EHT_CAP_MCS_SET]),
               len);
+
+        wifi_hal_dbg_print("%s:%d: NL debug: opmode: %d eht mcs: \n", __func__, __LINE__,
+            opmode);
+        for (int i = 0; i < len; i++) {
+            wifi_hal_dbg_print("0x%02x\n", eht_capab->mcs[i]);
+        }
     }
 
+    wifi_hal_dbg_print("%s:%d: NL debug: opmode: %d tb[NL80211_BAND_IFTYPE_ATTR_EHT_CAP_PPE]: %p\n",
+        __func__, __LINE__, opmode, tb[NL80211_BAND_IFTYPE_ATTR_EHT_CAP_PPE]);
     if (tb[NL80211_BAND_IFTYPE_ATTR_EHT_CAP_PPE]) {
         len = nla_len(tb[NL80211_BAND_IFTYPE_ATTR_EHT_CAP_PPE]);
         if (len > sizeof(eht_capab->ppet)) {
@@ -4319,6 +4405,11 @@ static void phy_info_iftype_copy(struct hostapd_hw_modes *mode,
         os_memcpy(&eht_capab->ppet,
               nla_data(tb[NL80211_BAND_IFTYPE_ATTR_EHT_CAP_PPE]),
               len);
+
+        wifi_hal_dbg_print("%s:%d: NL debug: opmode: %d ppet: \n", __func__, __LINE__, opmode);
+        for (int i = 0; i < len; i++) {
+            wifi_hal_dbg_print("0x%02x\n", eht_capab->ppet[i]);
+        }
     }
 #endif /* CONFIG_IEEE80211BE */
 }
@@ -4732,7 +4823,12 @@ static void wiphy_info_ext_feature_flags(wifi_radio_info_t *radio,
 
     if (ext_feature_isset(ext_features, len,
                   NL80211_EXT_FEATURE_DFS_OFFLOAD)) {
+        wifi_hal_dbg_print("%s:%d: NL debug: radio: %d NL80211_EXT_FEATURE_DFS_OFFLOAD: 1\n",
+            __func__, __LINE__, radio->index);
         capa->flags |= WPA_DRIVER_FLAGS_DFS_OFFLOAD;
+    } else {
+        wifi_hal_dbg_print("%s:%d: NL debug: radio: %d NL80211_EXT_FEATURE_DFS_OFFLOAD: 0\n",
+            __func__, __LINE__, radio->index);
     }
 
 #ifdef CONFIG_MBO
@@ -4896,6 +4992,11 @@ static void wiphy_info_extended_capab(wifi_driver_data_t *drv,
         capa->ext_capa = os_memdup(nla_data(tb1[NL80211_ATTR_EXT_CAPA]),
                        len);
 
+        wifi_hal_dbg_print("%s:%d: NL debug: ext cap: \n", __func__, __LINE__);
+        for (int i = 0; i < len; i++) {
+            wifi_hal_dbg_print("0x%02x\n", capa->ext_capa[i]);
+        }
+
         if (!capa->ext_capa) {
             goto err;
         }
@@ -4906,6 +5007,11 @@ static void wiphy_info_extended_capab(wifi_driver_data_t *drv,
         capa->ext_capa_mask =
             os_memdup(nla_data(tb1[NL80211_ATTR_EXT_CAPA_MASK]),
                   len);
+
+        wifi_hal_dbg_print("%s:%d: NL debug: ext cap mask: \n", __func__, __LINE__);
+        for (int i = 0; i < len; i++) {
+            wifi_hal_dbg_print("0x%02x\n", capa->ext_capa_mask[i]);
+        }
 
         if (!capa->ext_capa_mask) {
             goto err;
@@ -5040,12 +5146,30 @@ static int phy_info_band(wifi_radio_info_t *radio, struct nlattr *nl_band)
     mode->vht_mcs_set[5] = 0xff;
 
     nla_parse(tb_band, NL80211_BAND_ATTR_MAX, nla_data(nl_band), nla_len(nl_band), NULL);
+
+    wifi_hal_dbg_print("%s:%d: NL debug: tb_band[NL80211_BAND_ATTR_HT_CAPA]: %p\n", __func__,
+        __LINE__, tb_band[NL80211_BAND_ATTR_HT_CAPA]);
+    wifi_hal_dbg_print("%s:%d: NL debug: tb_band[NL80211_BAND_ATTR_HT_AMPDU_FACTOR]: %p\n",
+        __func__, __LINE__, tb_band[NL80211_BAND_ATTR_HT_AMPDU_FACTOR]);
+    wifi_hal_dbg_print("%s:%d: NL debug: tb_band[NL80211_BAND_ATTR_HT_AMPDU_DENSITY]: %p\n",
+        __func__, __LINE__, tb_band[NL80211_BAND_ATTR_HT_AMPDU_DENSITY]);
+    wifi_hal_dbg_print("%s:%d: NL debug: tb_band[NL80211_BAND_ATTR_HT_MCS_SET]: %p\n", __func__,
+        __LINE__, tb_band[NL80211_BAND_ATTR_HT_MCS_SET]);
+
     phy_info_ht_capa(mode, tb_band[NL80211_BAND_ATTR_HT_CAPA],
              tb_band[NL80211_BAND_ATTR_HT_AMPDU_FACTOR],
              tb_band[NL80211_BAND_ATTR_HT_AMPDU_DENSITY],
              tb_band[NL80211_BAND_ATTR_HT_MCS_SET]);
+
+    wifi_hal_dbg_print("%s:%d: NL debug: tb_band[NL80211_BAND_ATTR_VHT_CAPA]: %p\n", __func__,
+        __LINE__, tb_band[NL80211_BAND_ATTR_VHT_CAPA]);
+    wifi_hal_dbg_print("%s:%d: NL debug: tb_band[NL80211_BAND_ATTR_VHT_MCS_SET]: %p\n", __func__,
+        __LINE__, tb_band[NL80211_BAND_ATTR_VHT_MCS_SET]);
     phy_info_vht_capa(mode, tb_band[NL80211_BAND_ATTR_VHT_CAPA],
               tb_band[NL80211_BAND_ATTR_VHT_MCS_SET]);
+    wifi_hal_dbg_print(
+        "%s:%d: NL debug: radio: %d band: %d mode: %d tb_band[NL80211_BAND_ATTR_RATES]: %p\n",
+        __func__, __LINE__, radio->index, band, mode->mode, tb_band[NL80211_BAND_ATTR_RATES]);
     phy_info_rates(radio, mode, band, tb_band[NL80211_BAND_ATTR_RATES]);
 
     return NL_OK;
@@ -5184,6 +5308,9 @@ static int wiphy_dump_handler(struct nl_msg *msg, void *arg)
     gnlh = nlmsg_data(nlmsg_hdr(msg));
 
     nla_parse(tb, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0), genlmsg_attrlen(gnlh, 0), NULL);
+
+    wifi_hal_dbg_print("%s:%d: NL debug: ===start=== phy index: %d\n", __func__, __LINE__,
+        tb[NL80211_ATTR_WIPHY] ? nla_get_u32(tb[NL80211_ATTR_WIPHY]) : 0);
 
 #if !defined(VNTXER5_PORT) && !defined(TARGET_GEMINI7_2) && !defined(TCXB7_PORT) && !defined(TCXB8_PORT) && \
     !defined(XB10_PORT) && !defined(SCXER10_PORT)
@@ -5461,6 +5588,8 @@ static int wiphy_dump_handler(struct nl_msg *msg, void *arg)
         capa->max_remain_on_chan = nla_get_u32(tb[NL80211_ATTR_MAX_REMAIN_ON_CHANNEL_DURATION]);
     }
 
+    wifi_hal_dbg_print("%s:%d: NL debug: tb[NL80211_ATTR_SUPPORT_AP_UAPSD]: %p\n", __func__, __LINE__,
+        tb[NL80211_ATTR_SUPPORT_AP_UAPSD]);
     if (tb[NL80211_ATTR_SUPPORT_AP_UAPSD]) {
         capa->flags |= WPA_DRIVER_FLAGS_AP_UAPSD;
     }
@@ -5492,6 +5621,10 @@ static int wiphy_dump_handler(struct nl_msg *msg, void *arg)
     wiphy_info_probe_resp_offload(capa,
                     tb[NL80211_ATTR_PROBE_RESP_OFFLOAD]);
 
+    wifi_hal_dbg_print("%s:%d: NL debug: radio: %d tb[NL80211_ATTR_EXT_CAPA]: %p\n", __func__,
+        __LINE__, radio->index, tb[NL80211_ATTR_EXT_CAPA]);
+    wifi_hal_dbg_print("%s:%d: NL debug: radio: %d tb[NL80211_ATTR_EXT_CAPA_MASK]: %p\n", __func__,
+        __LINE__, radio->index, tb[NL80211_ATTR_EXT_CAPA]);
     if (tb[NL80211_ATTR_EXT_CAPA] && tb[NL80211_ATTR_EXT_CAPA_MASK] &&
         radio->driver_data.extended_capa == NULL) {
         radio->driver_data.extended_capa =
@@ -5502,6 +5635,11 @@ static int wiphy_dump_handler(struct nl_msg *msg, void *arg)
                 nla_len(tb[NL80211_ATTR_EXT_CAPA]));
             radio->driver_data.extended_capa_len =
                 nla_len(tb[NL80211_ATTR_EXT_CAPA]);
+
+            wifi_hal_dbg_print("%s:%d: NL debug: ext cap: \n", __func__, __LINE__);
+            for (int i = 0; i < radio->driver_data.extended_capa_len; i++) {
+                wifi_hal_dbg_print("0x%02x\n", radio->driver_data.extended_capa[i]);
+            }
         }
         radio->driver_data.extended_capa_mask =
             os_malloc(nla_len(tb[NL80211_ATTR_EXT_CAPA_MASK]));
@@ -5509,6 +5647,11 @@ static int wiphy_dump_handler(struct nl_msg *msg, void *arg)
             os_memcpy(radio->driver_data.extended_capa_mask,
                 nla_data(tb[NL80211_ATTR_EXT_CAPA_MASK]),
                 nla_len(tb[NL80211_ATTR_EXT_CAPA_MASK]));
+
+            wifi_hal_dbg_print("%s:%d: NL debug: ext cap mask: \n", __func__, __LINE__);
+            for (int i = 0; i < nla_len(tb[NL80211_ATTR_EXT_CAPA_MASK]); i++) {
+                wifi_hal_dbg_print("0x%02x\n", radio->driver_data.extended_capa_mask[i]);
+            }
         } else {
             os_free(radio->driver_data.extended_capa);
             radio->driver_data.extended_capa = NULL;
@@ -5516,6 +5659,8 @@ static int wiphy_dump_handler(struct nl_msg *msg, void *arg)
         }
     }
 
+    wifi_hal_dbg_print("%s:%d: NL debug: radio: %d tb[NL80211_ATTR_IFTYPE_EXT_CAPA]: %p\n", __func__,
+        __LINE__, radio->index, tb[NL80211_ATTR_IFTYPE_EXT_CAPA]);
     wiphy_info_extended_capab(&radio->driver_data, tb[NL80211_ATTR_IFTYPE_EXT_CAPA]);
 
     wiphy_info_wowlan_triggers(capa,
@@ -5558,6 +5703,8 @@ static int wiphy_dump_handler(struct nl_msg *msg, void *arg)
 #ifdef FEATURE_SINGLE_PHY
     }
 #endif //Braces corresponding to the for loop, for (j=0; (j < num_radios_mapped
+
+    wifi_hal_dbg_print("%s:%d: NL debug: ===end===\n", __func__, __LINE__);
     return NL_SKIP;
 
 }
@@ -5579,6 +5726,9 @@ static int wiphy_get_info_handler(struct nl_msg *msg, void *arg)
 
     gnlh = nlmsg_data(nlmsg_hdr(msg));
     nla_parse(tb, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0), genlmsg_attrlen(gnlh, 0), NULL);
+
+    wifi_hal_dbg_print("%s:%d: NL debug: ===start=== phy index: %d\n", __func__, __LINE__,
+        tb[NL80211_ATTR_WIPHY] ? nla_get_u32(tb[NL80211_ATTR_WIPHY]) : -1);
 
 #ifndef FEATURE_SINGLE_PHY
     if (tb[NL80211_ATTR_WIPHY]) {
@@ -5655,6 +5805,9 @@ static int wiphy_get_info_handler(struct nl_msg *msg, void *arg)
     } else {
         wifi_hal_info_print("%s:%d: Interface combinations attribute not present in radio index:%d\n", __func__, __LINE__, radio->index);
     }
+
+
+    wifi_hal_dbg_print("%s:%d: NL debug: ===end===\n", __func__, __LINE__);
     return NL_OK;
 }
 
@@ -5876,6 +6029,9 @@ static int phy_info_rates_get_hw_features(struct hostapd_hw_modes *mode, struct 
         mode->num_rates++;
     }
 
+    wifi_hal_dbg_print("%s:%d: NL debug: band mode: %d num_rates: %d\n",
+        __func__, __LINE__, mode->mode, mode->num_rates);
+
     mode->rates = os_calloc(mode->num_rates, sizeof(int));
     if (!mode->rates)
         return NL_STOP;
@@ -5891,6 +6047,8 @@ static int phy_info_rates_get_hw_features(struct hostapd_hw_modes *mode, struct 
         mode->rates[idx] = nla_get_u32(
             tb_rate[NL80211_BITRATE_ATTR_RATE]);
         idx++;
+        wifi_hal_dbg_print("%s:%d: NL debug: band mode: %d rate: %d\n",
+            __func__, __LINE__, mode->mode, mode->rates[idx]);
     }
 
     return NL_OK;
@@ -5912,6 +6070,9 @@ static int phy_info_handler(struct nl_msg *msg, void *arg)
 
     nla_parse(tb_msg, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
         genlmsg_attrlen(gnlh, 0), NULL);
+
+    wifi_hal_dbg_print("%s:%d: NL debug: ===start=== phy index: %d\n", __func__, __LINE__,
+        tb_msg[NL80211_ATTR_WIPHY] ? nla_get_u32(tb_msg[NL80211_ATTR_WIPHY]) : -1);
 
 #ifndef FEATURE_SINGLE_PHY
     if (tb_msg[NL80211_ATTR_WIPHY]) {
@@ -6002,6 +6163,9 @@ static int phy_info_handler(struct nl_msg *msg, void *arg)
         }
 #endif //FEATURE_SINGLE_PHY
     }
+
+    wifi_hal_dbg_print("%s:%d: NL debug: ===end===\n", __func__, __LINE__);
+
     return NL_SKIP;
 }
 
@@ -6176,6 +6340,8 @@ int update_channel_flags()
 {
     struct nl_msg *msg;
 
+    wifi_hal_dbg_print("%s:%d: NL debug: ===start===\n", __func__, __LINE__);
+
     msg = nl80211_drv_cmd_msg(g_wifi_hal.nl80211_id, NULL, NLM_F_DUMP, NL80211_CMD_GET_WIPHY);
     nla_put_flag(msg, NL80211_ATTR_SPLIT_WIPHY_DUMP);
     if (msg == NULL) {
@@ -6186,6 +6352,8 @@ int update_channel_flags()
     if (nl80211_send_and_recv(msg, phy_info_handler, &g_wifi_hal, NULL, NULL)) {
         return -1;
     }
+
+    wifi_hal_dbg_print("%s:%d: NL debug: ===end===\n", __func__, __LINE__);
 
     return 0;
 }
@@ -6334,6 +6502,7 @@ int init_nl80211()
         g_wifi_hal.radio_info[i].index = -1;
     }
     init_interface_map();
+    wifi_hal_dbg_print("%s:%d: NL debug: ===start===\n", __func__, __LINE__);
 #if !defined(VNTXER5_PORT) && !defined(TARGET_GEMINI7_2) && !defined(TCXB7_PORT) && !defined(TCXB8_PORT) && \
     !defined(XB10_PORT) && !defined(SCXER10_PORT)
     msg = nl80211_drv_cmd_msg(g_wifi_hal.nl80211_id, NULL, NLM_F_DUMP, NL80211_CMD_GET_WIPHY);
@@ -6355,6 +6524,7 @@ int init_nl80211()
     if (nl80211_send_and_recv(msg, wiphy_dump_handler, &g_wifi_hal, NULL, NULL)) {
         return -1;
     }
+    wifi_hal_dbg_print("%s:%d: NL debug: ===end===\n", __func__, __LINE__);
 
     wifi_hal_dbg_print("%s:%d: Number of supported radios: %d\n", __func__, __LINE__, g_wifi_hal.num_radios);
 
@@ -6695,6 +6865,7 @@ int nl80211_init_radio_info()
            continue;
         }
 
+        wifi_hal_dbg_print("%s:%d: NL debug: ===start===\n", __func__, __LINE__);
         // get information about phy
         msg = nl80211_drv_cmd_msg(g_wifi_hal.nl80211_id, NULL, 0, NL80211_CMD_GET_WIPHY);
         if (msg == NULL) {
@@ -6713,6 +6884,7 @@ int nl80211_init_radio_info()
             radio, NULL, NULL)) {
             return -1;
         }
+	wifi_hal_dbg_print("%s:%d: NL debug: ===end===\n", __func__, __LINE__);
     }
 
     return 0;
@@ -12472,6 +12644,20 @@ static int phy_info_get_hw_features_band(struct phy_info_arg *phy_info, struct n
     nla_parse(tb_band, NL80211_BAND_ATTR_MAX, nla_data(nl_band),
           nla_len(nl_band), NULL);
 
+    wifi_hal_dbg_print("%s:%d: NL debug: tb_band[NL80211_BAND_ATTR_HT_CAPA]: %p\n", __func__,
+        __LINE__, tb_band[NL80211_BAND_ATTR_HT_CAPA]);
+    wifi_hal_dbg_print("%s:%d: NL debug: tb_band[NL80211_BAND_ATTR_HT_AMPDU_FACTOR]: %p\n",
+        __func__, __LINE__, tb_band[NL80211_BAND_ATTR_HT_AMPDU_FACTOR]);
+    wifi_hal_dbg_print("%s:%d: NL debug: tb_band[NL80211_BAND_ATTR_HT_AMPDU_DENSITY]: %p\n",
+        __func__, __LINE__, tb_band[NL80211_BAND_ATTR_HT_AMPDU_DENSITY]);
+    wifi_hal_dbg_print("%s:%d: NL debug: tb_band[NL80211_BAND_ATTR_HT_MCS_SET]: %p\n", __func__,
+        __LINE__, tb_band[NL80211_BAND_ATTR_HT_MCS_SET]);
+
+    wifi_hal_dbg_print("%s:%d: NL debug: tb_band[NL80211_BAND_ATTR_VHT_CAPA]: %p\n", __func__,
+        __LINE__, tb_band[NL80211_BAND_ATTR_VHT_CAPA]);
+    wifi_hal_dbg_print("%s:%d: NL debug: tb_band[NL80211_BAND_ATTR_VHT_MCS_SET]: %p\n", __func__,
+        __LINE__, tb_band[NL80211_BAND_ATTR_VHT_MCS_SET]);
+
     phy_info_ht_capa(mode, tb_band[NL80211_BAND_ATTR_HT_CAPA],
              tb_band[NL80211_BAND_ATTR_HT_AMPDU_FACTOR],
              tb_band[NL80211_BAND_ATTR_HT_AMPDU_DENSITY],
@@ -12489,6 +12675,8 @@ static int phy_info_get_hw_features_band(struct phy_info_arg *phy_info, struct n
     }
 
     if (ret == NL_OK) {
+        wifi_hal_dbg_print("%s:%d: NL debug: mode: %d tb_band[NL80211_BAND_ATTR_RATES]: %p\n", __func__,
+            __LINE__, mode->mode, tb_band[NL80211_BAND_ATTR_RATES]);
         ret = phy_info_rates_get_hw_features(mode, tb_band[NL80211_BAND_ATTR_RATES]);
     }
 
@@ -12525,6 +12713,9 @@ static int phy_info_get_hw_feature_handler(struct nl_msg *msg, void *arg)
     nla_parse(tb_msg, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
           genlmsg_attrlen(gnlh, 0), NULL);
 
+    wifi_hal_dbg_print("%s:%d: NL debug: ===start=== phy index: %d\n", __func__, __LINE__,
+            tb_msg[NL80211_ATTR_WIPHY] ? nla_get_u32(tb_msg[NL80211_ATTR_WIPHY]) : 0);
+
     if (!tb_msg[NL80211_ATTR_WIPHY_BANDS]) {
         return NL_SKIP;
     }
@@ -12536,6 +12727,8 @@ static int phy_info_get_hw_feature_handler(struct nl_msg *msg, void *arg)
             return res;
         }
     }
+
+    wifi_hal_dbg_print("%s:%d: NL debug: ===end===\n", __func__, __LINE__);
 
     return NL_SKIP;
 }
@@ -12810,20 +13003,30 @@ static int nl80211_get_reg(struct nl_msg *msg, void *arg)
         wpa_printf(MSG_DEBUG, "nl80211: Regulatory information - country=%s",
                (char *) nla_data(tb_msg[NL80211_ATTR_REG_ALPHA2]));
     }
-
+    wifi_hal_dbg_print("%s:%d: NL debug: tb_msg[NL80211_ATTR_REG_RULES]: %p\n", __func__,
+        __LINE__, tb_msg[NL80211_ATTR_REG_RULES]);
     nla_for_each_nested(nl_rule, tb_msg[NL80211_ATTR_REG_RULES], rem_rule)
     {
         u32 start, end, max_eirp = 0, max_bw = 0, flags = 0;
         nla_parse(tb_rule, NL80211_FREQUENCY_ATTR_MAX,
               nla_data(nl_rule), nla_len(nl_rule), reg_policy);
+
+        wifi_hal_dbg_print("%s:%d: NL debug: tb_rule[NL80211_ATTR_FREQ_RANGE_START]: %p\n", __func__,
+            __LINE__, tb_rule[NL80211_ATTR_FREQ_RANGE_START]);
+        wifi_hal_dbg_print("%s:%d: NL debug: tb_rule[NL80211_ATTR_FREQ_RANGE_END]: %p\n", __func__,
+            __LINE__, tb_rule[NL80211_ATTR_FREQ_RANGE_END]);        
         if (tb_rule[NL80211_ATTR_FREQ_RANGE_START] == NULL ||
              tb_rule[NL80211_ATTR_FREQ_RANGE_END] == NULL) {
             continue;
         }
         start = nla_get_u32(tb_rule[NL80211_ATTR_FREQ_RANGE_START]) / 1000;
         end = nla_get_u32(tb_rule[NL80211_ATTR_FREQ_RANGE_END]) / 1000;
+        wifi_hal_dbg_print("%s:%d: NL debug: tb_rule[NL80211_ATTR_POWER_RULE_MAX_EIRP]: %p\n", __func__,
+            __LINE__, tb_rule[NL80211_ATTR_POWER_RULE_MAX_EIRP]);  
         if (tb_rule[NL80211_ATTR_POWER_RULE_MAX_EIRP]) {
             max_eirp = nla_get_u32(tb_rule[NL80211_ATTR_POWER_RULE_MAX_EIRP]) / 100;
+            wifi_hal_dbg_print("%s:%d: NL debug: start: %d, end: %d, eirp: %d\n", __func__,
+                __LINE__, start, end, max_eirp);
         }
         if (tb_rule[NL80211_ATTR_FREQ_RANGE_MAX_BW]) {
             max_bw = nla_get_u32(tb_rule[NL80211_ATTR_FREQ_RANGE_MAX_BW]) / 1000;
@@ -12903,6 +13106,7 @@ wifi_drv_get_hw_feature_data(void *priv, u16 *num_modes, u16 *flags, u8 *dfs_dom
     *num_modes = 0;
     *flags = 0; 
     *dfs_domain = 0;
+    wifi_hal_dbg_print("%s:%d: NL debug: ===start===\n", __func__, __LINE__);
 #if !defined(VNTXER5_PORT)
     msg = nl80211_drv_cmd_msg(g_wifi_hal.nl80211_id, NULL, NLM_F_DUMP, NL80211_CMD_GET_WIPHY);
     nla_put_flag(msg, NL80211_ATTR_SPLIT_WIPHY_DUMP);
@@ -12945,6 +13149,7 @@ wifi_drv_get_hw_feature_data(void *priv, u16 *num_modes, u16 *flags, u8 *dfs_dom
         nl80211_dump_chan_list(modes, *num_modes);
         return modes;
     }
+    wifi_hal_dbg_print("%s:%d: NL debug: ===end===\n", __func__, __LINE__);
 #endif // CONFIG_HW_CAPABILITIES || VNTXER5_PORT
     return NULL;
 }

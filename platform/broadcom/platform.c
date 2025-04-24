@@ -3441,6 +3441,9 @@ int platform_get_radio_caps(wifi_radio_index_t index)
     wifi_radio_info_t *radio;
     wifi_interface_info_t *interface;
 
+    //XXX NL Debug
+    return RETURN_OK;
+
     radio = get_radio_by_rdk_index(index);
     if (radio == NULL) {
         wifi_hal_error_print("%s:%d failed to get radio for index: %d\n", __func__, __LINE__,
@@ -3960,6 +3963,9 @@ void wifi_drv_get_phy_eht_cap_mac(struct eht_capabilities *eht_capab, struct nla
 
         pos = nla_data(tb[NL80211_BAND_IFTYPE_ATTR_EHT_CAP_MAC]);
         eht_capab->mac_cap = WPA_GET_LE16(pos);
+
+        wifi_hal_dbg_print("%s:%d: NL debug: eht mac cap: 0x%02x\n", __func__, __LINE__,
+            eht_capab->mac_cap);
     }
 }
 
