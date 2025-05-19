@@ -2206,6 +2206,9 @@ int process_mgmt_frame(struct nl_msg *msg, void *arg)
         stype = WLAN_FC_GET_STYPE(fc);
  	wifi_hal_dbg_print("%s:%d Phy_rate = %d interface_name = %s frametype: %d \n",__func__,__LINE__,phy_rate,interface->name,stype);    
     }
+#else
+    (void)fc;
+    (void)stype;
 #endif
     if ((attr = tb[NL80211_ATTR_REASON_CODE]) != NULL) {
         reason = nla_get_u16(attr);
