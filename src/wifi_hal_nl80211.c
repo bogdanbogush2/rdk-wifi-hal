@@ -1788,7 +1788,7 @@ int process_frame_mgmt(wifi_interface_info_t *interface, struct ieee80211_mgmt *
                 to_mac_str(mgmt->da, frame_da_str), len, sig_dbm);
         }
 
-        if (callbacks->steering_event_callback != 0) {
+        if (access("/nvram/wifiAssocReqSteerCbDis", F_OK) != 0 && callbacks->steering_event_callback != 0) {
             handle_auth_req_event_for_bm(interface, sta, sig_dbm);
         }
 #ifdef NL80211_ACL
@@ -1820,7 +1820,7 @@ int process_frame_mgmt(wifi_interface_info_t *interface, struct ieee80211_mgmt *
                 to_mac_str(mgmt->da, frame_da_str), len, sig_dbm);
         }
 
-        if (callbacks->steering_event_callback != 0) {
+        if (access("/nvram/wifiAssocReqSteerCbDis", F_OK) != 0 && callbacks->steering_event_callback != 0) {
             handle_assoc_req_event_for_bm(interface, mgmt, len, sta);
         }
         remove_station_from_other_interfaces(interface, sta);
@@ -1859,7 +1859,7 @@ int process_frame_mgmt(wifi_interface_info_t *interface, struct ieee80211_mgmt *
         mgmt_type = WIFI_MGMT_FRAME_TYPE_PROBE_REQ;
         //wifi_hal_dbg_print("%s:%d: Received probe req frame on interface:%s from the sta : %s and the phy_rate:%d\n", __func__, __LINE__,interface->name,to_mac_str(sta, sta_mac_str),phy_rate);
 
-        if (callbacks->steering_event_callback != 0) {
+        if (access("/nvram/wifiAssocReqSteerCbDis", F_OK) != 0 && callbacks->steering_event_callback != 0) {
             handle_probe_req_event_for_bm(interface, mgmt, len, sta, sig_dbm);
         }
 #ifdef NL80211_ACL
@@ -1938,11 +1938,11 @@ int process_frame_mgmt(wifi_interface_info_t *interface, struct ieee80211_mgmt *
         pthread_mutex_unlock(&g_wifi_hal.hapd_lock);
 
         for (int i = 0; i < callbacks->num_disassoc_cbs; i++) {
-            if (callbacks->disassoc_cb[i] != NULL) {
+            if (access("/nvram/wifiDisassocCbDis", F_OK) != 0 && callbacks->disassoc_cb[i] != NULL) {
                 callbacks->disassoc_cb[i](vap->vap_index, to_mac_str(sta, sta_mac_str), reason);
             }
         }
-        if (callbacks->steering_event_callback != 0) {
+        if (access("/nvram/wifiAssocReqSteerCbDis", F_OK) != 0 && callbacks->steering_event_callback != 0) {
             handle_disconnect_event_for_bm(interface, sta, mgmt_type, reason);
         }
 #ifdef WIFI_EMULATOR_CHANGE
@@ -1970,7 +1970,7 @@ int process_frame_mgmt(wifi_interface_info_t *interface, struct ieee80211_mgmt *
             break;
         }
         for (int i = 0; i < callbacks->num_apDeAuthEvent_cbs; i++) {
-            if (callbacks->apDeAuthEvent_cb[i] != NULL) {
+            if (access("/nvram/wifiDeauthEvCbDis", F_OK) != 0 && callbacks->apDeAuthEvent_cb[i] != NULL) {
                 callbacks->apDeAuthEvent_cb[i](vap->vap_index, to_mac_str(sta, sta_mac_str), reason);
             }
         }
@@ -1990,7 +1990,7 @@ int process_frame_mgmt(wifi_interface_info_t *interface, struct ieee80211_mgmt *
 
         if (station) {
             for (int i = 0; i < callbacks->num_disassoc_cbs; i++) {
-                if (callbacks->disassoc_cb[i] != NULL) {
+                if (access("/nvram/wifiDisassocCbDis", F_OK) != 0 && callbacks->disassoc_cb[i] != NULL) {
                     callbacks->disassoc_cb[i](vap->vap_index, to_mac_str(sta, sta_mac_str), reason);
                 }
             }
@@ -1998,7 +1998,7 @@ int process_frame_mgmt(wifi_interface_info_t *interface, struct ieee80211_mgmt *
             wifi_hal_dbg_print("%s:%d: interface:%s sta %s not found\n", __func__, __LINE__,
                 interface->name, to_mac_str(sta, sta_mac_str));
         }
-        if (callbacks->steering_event_callback != 0) {
+        if (access("/nvram/wifiAssocReqSteerCbDis", F_OK) != 0 && callbacks->steering_event_callback != 0) {
             handle_disconnect_event_for_bm(interface, sta, mgmt_type, reason);
         }
 #ifdef WIFI_EMULATOR_CHANGE
@@ -2016,7 +2016,7 @@ int process_frame_mgmt(wifi_interface_info_t *interface, struct ieee80211_mgmt *
         return -1;
     }
 
-    if (callbacks->mgmt_frame_rx_callback &&
+    if (access("/nvram/wifiMgtFrameRxCbDis", F_OK) != 0 && callbacks->mgmt_frame_rx_callback &&
         (stype != WLAN_FC_STYPE_PROBE_REQ || is_probe_req_to_our_ssid(mgmt, len, interface))) {
             mgmt_frame.ap_index = vap->vap_index;
             memcpy(mgmt_frame.sta_mac, sta, sizeof(mac_address_t));
@@ -2037,7 +2037,7 @@ int process_frame_mgmt(wifi_interface_info_t *interface, struct ieee80211_mgmt *
 #endif
 
         for (unsigned int i = 0; i < hooks->num_hooks; i++) {
-            if (hooks->frame_hooks_fn[i](vap->vap_index, mgmt_type) == NL_SKIP) {
+            if (access("/nvram/wifiFrHookCbDis", F_OK) != 0 && hooks->frame_hooks_fn[i](vap->vap_index, mgmt_type) == NL_SKIP) {
                 return -1;
             }
         }
@@ -2046,7 +2046,7 @@ int process_frame_mgmt(wifi_interface_info_t *interface, struct ieee80211_mgmt *
     //mgmt_frame_received_callback(vap->vap_index, sta, mgmt, len, mgmt_type, dir);
 
     /* if frame wasn't completely handled by this function, call the hostapd code */
-    if (forward_frame) {
+    if (access("/nvram/wifiForwFrameDis", F_OK) != 0 && forward_frame) {
         union wpa_event_data event;
 
         os_memset(&event, 0, sizeof(event));
@@ -2064,7 +2064,7 @@ int process_frame_mgmt(wifi_interface_info_t *interface, struct ieee80211_mgmt *
     }
 
 #ifdef WIFI_EMULATOR_CHANGE
-    if (send_mgmt_to_char_dev == true) {
+    if (access("/nvram/wifiEmuDis", F_OK) != 0 && send_mgmt_to_char_dev == true) {
         if ((access(ONEWIFI_TESTSUITE_TMPFILE, R_OK)) == 0) {
             if (fd_c < 0) {
                 fd_c = open("/dev/rdkfmac_dev", O_RDWR);
@@ -6095,13 +6095,14 @@ static int get_sta_handler(struct nl_msg *msg, void *arg)
     associated_dev.cli_Active = true;
 
     for (int i = 0; i < callbacks->num_assoc_cbs; i++) {
-        if (callbacks->assoc_cb[i] != NULL) {
+        if (callbacks->assoc_cb[i] != NULL && access("/nvram/wifiAssocCbDis", F_OK) != 0) {
             callbacks->assoc_cb[i](vap->vap_index, &associated_dev);
         }
     }
 
     if (callbacks->steering_event_callback != 0 &&
-        vap->u.bss_info.security.mode != wifi_security_mode_none) {
+        vap->u.bss_info.security.mode != wifi_security_mode_none &&
+	access("/nvram/wifiAssocSteerCbDis", F_OK) != 0) {
         wifi_steering_event_t steering_evt;
         struct sta_info *station = NULL;
         uint32_t g_idx = 0;
@@ -11107,7 +11108,7 @@ int wifi_drv_sta_disassoc(void *priv, const u8 *own_addr, const u8 *addr, u16 re
     callbacks = get_hal_device_callbacks();
 
     for (int i = 0; i < callbacks->num_disassoc_cbs; i++) {
-        if (callbacks->disassoc_cb[i] != NULL) {
+        if (callbacks->disassoc_cb[i] != NULL && access("/nvram/wifiDisassocCbDis", F_OK) != 0) {
             callbacks->disassoc_cb[i](vap->vap_index, to_mac_str(addr, mac_str), 0);
         }
     }

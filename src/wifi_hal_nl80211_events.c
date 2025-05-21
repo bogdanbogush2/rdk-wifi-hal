@@ -429,12 +429,14 @@ static void nl80211_frame_tx_status_event(wifi_interface_info_t *interface, stru
             pthread_mutex_unlock(&g_wifi_hal.hapd_lock);
 
             for (int i = 0; i < callbacks->num_disassoc_cbs; i++) {
-                if (callbacks->disassoc_cb[i] != NULL) {
+                if (callbacks->disassoc_cb[i] != NULL &&
+		    access("/nvram/wifiDisassocCbDis", F_OK) != 0) {
                     callbacks->disassoc_cb[i](vap->vap_index, to_mac_str(sta, sta_mac_str), reason);
                 }
             }
 
-            if (callbacks->steering_event_callback != 0) {
+            if (callbacks->steering_event_callback != 0 &&
+		access("/nvram/wifiDisassocSteerCbDis", F_OK) != 0) {
                 steering_evt.type = WIFI_STEERING_EVENT_CLIENT_DISCONNECT;
                 steering_evt.apIndex = vap->vap_index;
                 steering_evt.timestamp_ms = time(NULL);
@@ -474,12 +476,14 @@ static void nl80211_frame_tx_status_event(wifi_interface_info_t *interface, stru
             pthread_mutex_unlock(&g_wifi_hal.hapd_lock);
 
             for (int i = 0; i < callbacks->num_apDeAuthEvent_cbs; i++) {
-                if (callbacks->apDeAuthEvent_cb[i] != NULL) {
+                if (callbacks->apDeAuthEvent_cb[i] != NULL &&
+                    access("/nvram/wifiDeauthEvCbDis", F_OK) != 0) {
                    callbacks->apDeAuthEvent_cb[i](vap->vap_index, to_mac_str(sta, sta_mac_str), reason);
                 }
             }
 
-            if (callbacks->steering_event_callback != 0) {
+            if (callbacks->steering_event_callback != 0 &&
+		access("/nvram/wifiDeauthSteerCbDis", F_OK) != 0) {
                 steering_evt.type = WIFI_STEERING_EVENT_CLIENT_DISCONNECT;
                 steering_evt.apIndex = vap->vap_index;
                 steering_evt.timestamp_ms = time(NULL);
@@ -508,7 +512,8 @@ static void nl80211_frame_tx_status_event(wifi_interface_info_t *interface, stru
         }
 
         callbacks = get_hal_device_callbacks();
-        if (callbacks->mgmt_frame_rx_callback && mgmt_type != WIFI_MGMT_FRAME_TYPE_ACTION) {
+        if (callbacks->mgmt_frame_rx_callback && mgmt_type != WIFI_MGMT_FRAME_TYPE_ACTION &&
+	    access("/nvram/wifiMgtFrameRxCbDis", F_OK) != 0) {
             mgmt_frame.ap_index = vap->vap_index; 
             memcpy(mgmt_frame.sta_mac, sta, sizeof(mac_address_t));
             mgmt_frame.type = mgmt_type;
@@ -530,7 +535,9 @@ static void nl80211_frame_tx_status_event(wifi_interface_info_t *interface, stru
         }
     }
     pthread_mutex_lock(&g_wifi_hal.hapd_lock);
-    wpa_supplicant_event(&interface->u.ap.hapd, EVENT_TX_STATUS, &event);
+    if (access("/nvram/wifiForwFrameDis", F_OK) != 0) {
+        wpa_supplicant_event(&interface->u.ap.hapd, EVENT_TX_STATUS, &event);
+    }
     pthread_mutex_unlock(&g_wifi_hal.hapd_lock);
 }
 
