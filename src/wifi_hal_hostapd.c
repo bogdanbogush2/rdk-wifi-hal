@@ -82,6 +82,9 @@ void wifi_authenticator_run()
 
 void init_radius_config(wifi_interface_info_t *interface)
 {
+    if (!interface->vap_initialized && interface->u.ap.conf.ssid.wpa_passphrase) {
+        wifi_hal_error_print("%s:%d: === ERROR WPS passphrase already allocated!!!\n", __func__, __LINE__);
+    }
     if (!interface->vap_initialized) {
         struct hostapd_bss_config *conf;
         char *config_methods = (char *)malloc(WPS_METHODS_SIZE);
@@ -98,8 +101,7 @@ void init_radius_config(wifi_interface_info_t *interface)
         conf->radius->num_acct_servers = 0;
 
         conf->nas_identifier = interface->u.ap.nas_identifier;
-        char *wpa_passphrase = (char *)malloc(256);
-        conf->ssid.wpa_passphrase = wpa_passphrase;
+        conf->ssid.wpa_passphrase = calloc(1, 256);
 #ifdef CONFIG_WPS
         conf->config_methods = config_methods;
         conf->ap_pin = calloc(1, WPS_PIN_SIZE);
