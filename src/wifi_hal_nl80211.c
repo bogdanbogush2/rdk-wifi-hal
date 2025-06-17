@@ -16182,7 +16182,7 @@ static u8* wifi_drv_get_rnr_colocation_ie(void *priv, u8 *eid, size_t *current_l
             if (interface->u.ap.hapd.conf != NULL &&
                 strncmp(interface->u.ap.hapd.conf->ssid.ssid, hapd->conf->ssid.ssid,
                     sizeof(hapd->conf->ssid.ssid)) == 0) {
-                bss_param |= RNR_BSS_PARAM_SAME_SSID;
+                //bss_param |= RNR_BSS_PARAM_SAME_SSID;
             }
 
             bss_param |= RNR_BSS_PARAM_CO_LOCATED | RNR_BSS_PARAM_MEMBER_CO_LOCATED_ESS;
