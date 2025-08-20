@@ -466,6 +466,7 @@ typedef struct wifi_interface_info_t {
     int mgmt_frames_registered;
     int spurious_frames_registered;
     int bss_frames_registered;
+    int bss_allow_recv;
     hash_map_t  *acl_map;
 
     /* Scan support */
@@ -623,6 +624,7 @@ typedef struct {
     pthread_mutex_t hapd_lock;
     pthread_mutex_t steering_data_lock;
     wifi_bm_steering_group_t  bm_steer_groups[MAX_STEERING_GROUP_NUM];
+    bool config_done;
 } wifi_hal_priv_t;
 
 extern wifi_hal_priv_t g_wifi_hal;

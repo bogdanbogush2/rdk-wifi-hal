@@ -421,7 +421,7 @@ INT wifi_hal_init()
     }
 
     if (nl80211_init_primary_interfaces() != 0) {
-        return RETURN_ERR;
+       return RETURN_ERR;
     }
 
     if (nl80211_init_radio_info() != 0) {
@@ -697,6 +697,20 @@ INT wifi_hal_setRadioOperatingParameters(wifi_radio_index_t index, wifi_radio_op
 
     RADIO_INDEX_ASSERT(index);
     NULL_PTR_ASSERT(operationParam);
+
+    //XXX
+    if (operationParam->band == WIFI_FREQUENCY_2_4_BAND) {
+        operationParam->channel = 1;
+        operationParam->channelWidth = WIFI_CHANNELBANDWIDTH_40MHZ;
+    }
+    if (operationParam->band == WIFI_FREQUENCY_5_BAND) {
+        operationParam->channel = 36;
+        operationParam->channelWidth = WIFI_CHANNELBANDWIDTH_80MHZ;
+    }
+    if (operationParam->band == WIFI_FREQUENCY_6_BAND) {
+        operationParam->channel = 37;
+        operationParam->channelWidth = WIFI_CHANNELBANDWIDTH_320MHZ;
+    }    
 
 #ifdef CONFIG_WIFI_EMULATOR
     radio = get_radio_by_rdk_index(index);
@@ -1225,7 +1239,7 @@ int init_wpa_supplicant(wifi_interface_info_t *interface)
 }
 #endif
 
-static int wifi_hal_create_mld(wifi_radio_info_t *radio, wifi_interface_info_t *interface,
+int wifi_hal_create_mld(wifi_radio_info_t *radio, wifi_interface_info_t *interface,
     wifi_vap_info_t *vap)
 {
     if (vap->vap_mode != wifi_vap_mode_ap) {
@@ -1266,27 +1280,50 @@ static int wifi_hal_create_mld(wifi_radio_info_t *radio, wifi_interface_info_t *
     wifi_hal_info_print("%s:%d: vap index:%d interface:%s MLD enable: %d\n", __func__, __LINE__,
         vap->vap_index, interface->name, vap->u.bss_info.mld_info.common_info.mld_enable);
 
-    if (!interface->vap_info.u.bss_info.mld_info.common_info.mld_enable &&
-        vap->u.bss_info.mld_info.common_info.mld_enable) {
-        // TODO: disable interface and enable MLD
-        if (interface->vap_info.vap_index == 0) {
-            system("ip link set dev wifi0 down");
-            system("ip link set dev wifi0 address 00:11:11:11:11:11");
-            system("ip link set dev wifi1 down");
-            system("ip link set dev wifi1 address 00:22:22:22:22:22");
-            system("ip link set dev wifi2 down");
-            system("ip link set dev wifi2 address 00:33:33:33:33:33");
+    // if (!interface->vap_info.u.bss_info.mld_info.common_info.mld_enable &&
+    //     vap->u.bss_info.mld_info.common_info.mld_enable) {
+    //     // TODO: disable interface and enable MLD
+    //     if (interface->vap_info.vap_index == 0) {
+    //         system("ip link set dev wifi0 down");
+    //         system("ip link set dev wifi0 address 00:11:11:11:11:11");
+    //         system("ip link set dev wifi1 down");
+    //         system("ip link set dev wifi1 address 00:22:22:22:22:22");
+    //         system("ip link set dev wifi2 down");
+    //         system("ip link set dev wifi2 address 00:33:33:33:33:33");
 
-            system("ip link set dev mld0 down");
-            system("ip link set dev mld0 address 00:11:22:33:44:55");
-            system("ip link set dev mld0 up");
-        }
-    } else if (interface->vap_info.u.bss_info.mld_info.common_info.mld_enable &&
-        !vap->u.bss_info.mld_info.common_info.mld_enable) {
-        // TODO: disable MLD and enable interface
-    }
+    //         system("ip link set dev mld0 down");
+    //         system("ip link set dev mld0 address 00:11:22:33:44:55");
+    //         system("ip link set dev mld0 up");
+    //     }
+    // } else if (interface->vap_info.u.bss_info.mld_info.common_info.mld_enable &&
+    //     !vap->u.bss_info.mld_info.common_info.mld_enable) {
+    //     // TODO: disable MLD and enable interface
+    // }
 
     return RETURN_OK;
+}
+
+static void hostapd_tx_queue_params(struct hostapd_iface *iface)
+{
+	struct hostapd_data *hapd = iface->bss[0];
+	int i;
+	struct hostapd_tx_queue_params *p;
+
+#ifdef CONFIG_MESH
+	if ((hapd->conf->mesh & MESH_ENABLED) && iface->mconf == NULL)
+		return;
+#endif /* CONFIG_MESH */
+
+	for (i = 0; i < NUM_TX_QUEUES; i++) {
+		p = &iface->conf->tx_queue[i];
+
+		if (hostapd_set_tx_queue_params(hapd, i, p->aifs, p->cwmin,
+						p->cwmax, p->burst)) {
+			wpa_printf(MSG_DEBUG, "Failed to set TX queue "
+				   "parameters for queue %d.", i);
+			/* Continue anyway */
+		}
+	}
 }
 
 #if defined(SCXER10_PORT) && defined(CONFIG_IEEE80211BE) && defined(KERNEL_NO_320MHZ_SUPPORT)
@@ -1364,6 +1401,12 @@ INT wifi_hal_createVAP(wifi_radio_index_t index, wifi_vap_info_map_t *map)
     for (i = 0; i < map->num_vaps; i++) {
         vap = &map->vap_array[i];
 
+        //XXX
+        if (vap->vap_index != 0 && vap->vap_index != 1 &&
+            vap->vap_index != 16) {
+            continue;
+        }
+
         wifi_hal_info_print("%s:%d: vap index:%d create vap\n", __func__, __LINE__,
             vap->vap_index);
 
@@ -1385,6 +1428,7 @@ INT wifi_hal_createVAP(wifi_radio_index_t index, wifi_vap_info_map_t *map)
             }
         }
 
+        //XXX
         if (wifi_hal_create_mld(radio, interface, vap) != RETURN_OK) {
             wifi_hal_error_print("%s:%d: vap index:%d failed to create mld\n", __func__, __LINE__,
                 vap->vap_index);
@@ -1428,7 +1472,7 @@ INT wifi_hal_createVAP(wifi_radio_index_t index, wifi_vap_info_map_t *map)
         interface_name = wifi_hal_get_interface_name(interface);
 
         wifi_hal_info_print("%s:%d: interface:%s set down\n", __func__, __LINE__, interface_name);
-        nl80211_interface_enable(interface_name, false);
+        //nl80211_interface_enable(interface_name, false);
 #ifndef CONFIG_WIFI_EMULATOR
         if (vap->vap_mode == wifi_vap_mode_sta) {
             wifi_hal_info_print("%s:%d: interface:%s remove from bridge\n", __func__, __LINE__,
@@ -1438,11 +1482,12 @@ INT wifi_hal_createVAP(wifi_radio_index_t index, wifi_vap_info_map_t *map)
 #endif
         wifi_hal_info_print("%s:%d: interface:%s set mode:%d\n", __func__, __LINE__,
             interface_name, vap->vap_mode);
-        if (nl80211_update_interface(interface) != 0) {
-            wifi_hal_error_print("%s:%d: interface:%s failed to set mode %d\n",__func__, __LINE__,
-                interface_name, vap->vap_mode);
-            return RETURN_ERR;
-        }
+        //XXX
+        // if (nl80211_update_interface(interface) != 0) {
+        //     wifi_hal_error_print("%s:%d: interface:%s failed to set mode %d\n",__func__, __LINE__,
+        //         interface_name, vap->vap_mode);
+        //     return RETURN_ERR;
+        // }
 
         wifi_hal_info_print("%s:%d: interface:%s radio configured:%d radio enabled:%d\n",
             __func__, __LINE__, interface_name, radio->configured, radio->oper_param.enable);
@@ -1667,6 +1712,26 @@ INT wifi_hal_createVAP(wifi_radio_index_t index, wifi_vap_info_map_t *map)
                 wifi_hal_error_print("%s:%d: vap index:%d failed to set power %d\n", __func__,
                     __LINE__, vap->vap_index, vap->u.bss_info.mgmtPowerControl);
             }
+
+            //struct hostapd_data *hapd = &interface->u.ap.hapd;
+            struct hostapd_iface *iface = &interface->u.ap.iface;
+            // XXX
+		    // hostapd_set_freq(hapd, hapd->iconf->hw_mode, iface->freq,
+			// 	     hapd->iconf->channel,
+			// 	     hapd->iconf->enable_edmg,
+			// 	     hapd->iconf->edmg_channel,
+			// 	     hapd->iconf->ieee80211n,
+			// 	     hapd->iconf->ieee80211ac,
+			// 	     hapd->iconf->ieee80211ax,
+			// 	     hapd->iconf->ieee80211be,
+			// 	     hapd->iconf->secondary_channel,
+			// 	     hostapd_get_oper_chwidth(hapd->iconf),
+			// 	     hostapd_get_oper_centr_freq_seg0_idx(
+			// 		     hapd->iconf),
+			// 	     hostapd_get_oper_centr_freq_seg1_idx(
+			// 		     hapd->iconf));
+            hostapd_tx_queue_params(iface);
+
         }
 #ifdef CONFIG_WIFI_EMULATOR
         //Init wpa-supplicant params.
@@ -1677,6 +1742,29 @@ INT wifi_hal_createVAP(wifi_radio_index_t index, wifi_vap_info_map_t *map)
             }
         }
 #endif
+
+        // XXX
+        wifi_hal_info_print("%s:%d: set beacons for mld links\n", __func__, __LINE__);
+        if (vap->vap_index == 16) {
+            g_wifi_hal.config_done = true;
+
+            for (i = 0; i < g_wifi_hal.num_radios; i++) {
+                wifi_radio_info_t *rad = get_radio_by_rdk_index(i);
+                wifi_interface_info_t *interf;
+                hash_map_foreach(rad->interface_map, interf) {
+                    if (interf->vap_info.vap_index != 0 && interf->vap_info.vap_index != 1 &&
+                        interf->vap_info.vap_index != 16) {
+                        continue;
+                    }
+                    if (ieee802_11_set_beacon(&interf->u.ap.hapd) != 0) {
+                        wifi_hal_error_print(
+                            "%s:%d: Failed to set beacon for interface: %s link id: %d\n", __func__,
+                            __LINE__, interf->u.ap.hapd.conf->iface,
+                            wifi_hal_get_mld_link_id(interf));
+                    }
+                }
+            }
+        }
     }
 
     if ((set_vap_params_fn = get_platform_create_vap_fn()) != NULL) {
@@ -1684,6 +1772,9 @@ INT wifi_hal_createVAP(wifi_radio_index_t index, wifi_vap_info_map_t *map)
             radio->index);
         set_vap_params_fn(index, map);
     }
+
+    //XXX
+
 
     return RETURN_OK;
 }

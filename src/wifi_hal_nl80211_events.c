@@ -161,6 +161,25 @@ static void nl80211_del_station_event(wifi_interface_info_t *interface, struct n
     mac_addr_str_t mac_str;
     char br_buff[128] = {0};
 
+    //TODO: crash
+
+// #0  memcmp () at ../sysdeps/aarch64/memcmp.S:122
+// #1  0x0000007fa97eed70 in ap_get_sta (hapd=hapd@entry=0x7fa932b070, sta=sta@entry=0x7fa92e77b0 "\240\002\245\330\033z") at ../src/ap/sta_info.c:75
+// #2  0x0000007fa97e23a8 in hostapd_notif_disassoc (hapd=0x7fa932b070, addr=0x7fa92e77b0 "\240\002\245\330\033z") at ../src/ap/drv_callbacks.c:1060
+// #3  0x0000007faaccfc8c in nl80211_del_station_event (interface=0x7fa930c010, tb=<optimized out>)
+//     at ../../../../../../../../sprint_sources.github/rdk-wifi-hal/src/wifi_hal_nl80211_events.c:176
+// #4  0x0000007faacd1bd8 in process_global_nl80211_event (msg=<optimized out>, arg=0x7faad11540 <g_wifi_hal>)
+//     at ../../../../../../../../sprint_sources.github/rdk-wifi-hal/src/wifi_hal_nl80211_events.c:1616
+// #5  0x0000007fa9741778 in nl_cb_call (cb=cb@entry=0x39b71050, type=<optimized out>, msg=<optimized out>)
+//     at ../libnl-3.5.0/include/netlink-private/netlink.h:144
+// #6  0x0000007fa9742914 in recvmsgs (cb=0x39b71050, sk=0x39b76590) at ../libnl-3.5.0/lib/nl.c:1007
+// #7  nl_recvmsgs_report (sk=0x39b76590, cb=0x39b71050) at ../libnl-3.5.0/lib/nl.c:1058
+// #8  0x0000007fa9742ad4 in nl_recvmsgs (sk=<optimized out>, cb=<optimized out>) at ../libnl-3.5.0/lib/nl.c:1082
+// #9  0x0000007faacc699c in nl_recv_func (arg=0x7faad11540 <g_wifi_hal>)
+//     at ../../../../../../../../sprint_sources.github/rdk-wifi-hal/src/wifi_hal_nl80211.c:2883
+
+    return;
+
     if ((attr = tb[NL80211_ATTR_MAC]) == NULL) {
         wifi_hal_error_print("%s:%d: mac attribute not present ... dropping\n", __func__, __LINE__);
         return;
