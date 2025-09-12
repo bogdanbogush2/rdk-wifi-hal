@@ -269,7 +269,7 @@ int platform_get_ssid_default(char *ssid, int vap_index)
     }
     wifi_hal_dbg_print("%s:%d, read SSID from jSON file failed:%d\n", __func__, __LINE__, ret);
 #ifdef CONFIG_GENERIC_MLO
-    snprintf(ssid, BPI_LEN_16, "BPI-RDKB-MLO-AP");
+    snprintf(ssid, BPI_LEN_16, "MT76_AP_MLA");
 #else    
     snprintf(ssid,BPI_LEN_16,"BPI_RDKB-AP%d",vap_index);
 #endif    
@@ -308,7 +308,7 @@ int nvram_get_current_ssid(char *l_ssid, int vap_index)
 {
     wifi_hal_dbg_print("%s:%d \n",__func__,__LINE__);
 #ifdef CONFIG_GENERIC_MLO    
-    snprintf(l_ssid, BPI_LEN_16, "BPI-RDKB-MLO-AP");
+    snprintf(l_ssid, BPI_LEN_16, "MT76_AP_MLA");
 #else    
     snprintf(l_ssid,BPI_LEN_16,"BPI_RDKB-AP%d",vap_index);
 #endif    

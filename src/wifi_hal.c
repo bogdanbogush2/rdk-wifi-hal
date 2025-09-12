@@ -433,6 +433,15 @@ INT wifi_hal_init()
 #endif
     char *drv_name;
 
+    system("ip link set dev wifi0 down");
+    system("ip link set dev wifi0 address 00:11:22:33:44:00");
+    system("ip link set dev wifi1 down");
+    system("ip link set dev wifi1 address 00:11:22:33:44:01");
+    system("ip link set dev wifi2 down");
+    system("ip link set dev wifi2 address 00:11:22:33:44:02");
+    system("ip link set dev mld0 down");
+    system("ip link set dev mld0 address 00:11:22:33:44:55");
+
     wifi_hal_info_print("%s:%d: start\n", __func__, __LINE__);
     if ((drv_name = get_wifi_drv_name()) == NULL) {
         wifi_hal_error_print("%s:%d: driver not found, get drv name failed\n", __func__, __LINE__);
@@ -763,6 +772,21 @@ INT wifi_hal_setRadioOperatingParameters(wifi_radio_index_t index, wifi_radio_op
 
     RADIO_INDEX_ASSERT(index);
     NULL_PTR_ASSERT(operationParam);
+
+//XXX
+    if (operationParam->band == WIFI_FREQUENCY_2_4_BAND) {
+        operationParam->channel = 1;
+        operationParam->channelWidth = WIFI_CHANNELBANDWIDTH_40MHZ;
+    }
+    if (operationParam->band == WIFI_FREQUENCY_5_BAND) {
+        operationParam->channel = 36;
+        operationParam->channelWidth = WIFI_CHANNELBANDWIDTH_80MHZ;
+    }
+    if (operationParam->band == WIFI_FREQUENCY_6_BAND) {
+        operationParam->channel = 37;
+        operationParam->channelWidth = WIFI_CHANNELBANDWIDTH_320MHZ;
+    }    
+
 
 #if defined(CONFIG_WIFI_EMULATOR) || defined(CONFIG_WIFI_EMULATOR_EXT_AGENT)
     radio = get_radio_by_rdk_index(index);
