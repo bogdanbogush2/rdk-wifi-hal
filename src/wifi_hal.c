@@ -764,6 +764,20 @@ INT wifi_hal_setRadioOperatingParameters(wifi_radio_index_t index, wifi_radio_op
     RADIO_INDEX_ASSERT(index);
     NULL_PTR_ASSERT(operationParam);
 
+    //XXX
+    if (operationParam->band == WIFI_FREQUENCY_2_4_BAND) {
+        operationParam->channel = 1;
+        operationParam->channelWidth = WIFI_CHANNELBANDWIDTH_40MHZ;
+    }
+    if (operationParam->band == WIFI_FREQUENCY_5_BAND) {
+        operationParam->channel = 36;
+        operationParam->channelWidth = WIFI_CHANNELBANDWIDTH_80MHZ;
+    }
+    if (operationParam->band == WIFI_FREQUENCY_6_BAND) {
+        operationParam->channel = 37;
+        operationParam->channelWidth = WIFI_CHANNELBANDWIDTH_320MHZ;
+    }
+
 #if defined(CONFIG_WIFI_EMULATOR) || defined(CONFIG_WIFI_EMULATOR_EXT_AGENT)
     radio = get_radio_by_rdk_index(index);
     if (radio == NULL) {
@@ -1385,6 +1399,11 @@ INT wifi_hal_createVAP(wifi_radio_index_t index, wifi_vap_info_map_t *map)
     for (i = 0; i < map->num_vaps; i++) {
         vap = &map->vap_array[i];
 
+        if (vap->vap_index != 0 && vap->vap_index != 1 &&
+            vap->vap_index != 16) {
+            continue;
+        }
+
         wifi_hal_info_print("%s:%d: vap index:%d vap_name = %s create vap\n", __func__, __LINE__,
             vap->vap_index, vap->vap_name);
 
@@ -1714,6 +1733,10 @@ INT wifi_hal_createVAP(wifi_radio_index_t index, wifi_vap_info_map_t *map)
             }
         }
 #endif
+
+        if (vap->vap_index == 16) {
+            g_wifi_hal.config_done = true;
+        }
     }
 
     if ((set_vap_params_fn = get_platform_create_vap_fn()) != NULL) {

@@ -531,7 +531,7 @@ int update_security_config(wifi_vap_security_t *sec, struct hostapd_bss_config *
         case wifi_security_mode_wpa3_personal:
             conf->wpa_key_mgmt = WPA_KEY_MGMT_SAE;
 #ifdef CONFIG_IEEE80211BE
-            conf->wpa_key_mgmt |= (conf->disable_11be ? 0 : WPA_KEY_MGMT_SAE_EXT_KEY);
+//            conf->wpa_key_mgmt |= (conf->disable_11be ? 0 : WPA_KEY_MGMT_SAE_EXT_KEY);
 #endif /* CONFIG_IEEE80211BE */
 
             conf->auth_algs = WPA_AUTH_ALG_SAE;
@@ -558,7 +558,7 @@ int update_security_config(wifi_vap_security_t *sec, struct hostapd_bss_config *
         case wifi_security_mode_wpa3_transition:
             conf->wpa_key_mgmt = WPA_KEY_MGMT_PSK | WPA_KEY_MGMT_SAE;
 #ifdef CONFIG_IEEE80211BE
-            conf->wpa_key_mgmt |= (conf->disable_11be ? 0 : WPA_KEY_MGMT_SAE_EXT_KEY);
+//            conf->wpa_key_mgmt |= (conf->disable_11be ? 0 : WPA_KEY_MGMT_SAE_EXT_KEY);
 #endif /* CONFIG_IEEE80211BE */
             conf->auth_algs = WPA_AUTH_ALG_SAE | WPA_AUTH_ALG_SHARED | WPA_AUTH_ALG_OPEN;
 #if HOSTAPD_VERSION >= 210 //2.10
@@ -710,7 +710,7 @@ int update_security_config(wifi_vap_security_t *sec, struct hostapd_bss_config *
             case wifi_security_mode_wpa3_personal:
             case wifi_security_mode_wpa3_transition:
             case wifi_security_mode_wpa3_enterprise:
-                conf->wpa_pairwise |= (conf->disable_11be ? 0 : WPA_CIPHER_GCMP_256);
+                //conf->wpa_pairwise |= (conf->disable_11be ? 0 : WPA_CIPHER_GCMP_256);
                 break;
             default:
                 break;
