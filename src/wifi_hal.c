@@ -764,6 +764,21 @@ INT wifi_hal_setRadioOperatingParameters(wifi_radio_index_t index, wifi_radio_op
     RADIO_INDEX_ASSERT(index);
     NULL_PTR_ASSERT(operationParam);
 
+    //XXX
+    if (operationParam->band == WIFI_FREQUENCY_2_4_BAND) {
+        operationParam->channel = 1;
+        operationParam->channelWidth = WIFI_CHANNELBANDWIDTH_40MHZ;
+    }
+    if (operationParam->band == WIFI_FREQUENCY_5_BAND) {
+        operationParam->channel = 36;
+        operationParam->channelWidth = WIFI_CHANNELBANDWIDTH_80MHZ;
+    }
+    if (operationParam->band == WIFI_FREQUENCY_6_BAND) {
+        operationParam->channel = 37;
+        operationParam->channelWidth = WIFI_CHANNELBANDWIDTH_320MHZ;
+    }
+
+
 #if defined(CONFIG_WIFI_EMULATOR) || defined(CONFIG_WIFI_EMULATOR_EXT_AGENT)
     radio = get_radio_by_rdk_index(index);
     if (radio == NULL) {
