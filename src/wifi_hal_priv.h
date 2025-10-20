@@ -649,6 +649,7 @@ typedef struct {
     wifi_bm_steering_group_t  bm_steer_groups[MAX_STEERING_GROUP_NUM];
     hash_map_t *mgt_frame_rate_limit_hashmap;
     wifi_hal_mgt_frame_rate_limit_t mgt_frame_rate_limit;
+    bool vap_init_done;
 } wifi_hal_priv_t;
 
 extern wifi_hal_priv_t g_wifi_hal;

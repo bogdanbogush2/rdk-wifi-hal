@@ -772,6 +772,9 @@ INT wifi_hal_setRadioOperatingParameters(wifi_radio_index_t index, wifi_radio_op
         operationParam->channelWidth = WIFI_CHANNELBANDWIDTH_320MHZ;
     }
 
+    if (index != 0) {
+        return 0;
+    }
 
 #if defined(CONFIG_WIFI_EMULATOR) || defined(CONFIG_WIFI_EMULATOR_EXT_AGENT)
     radio = get_radio_by_rdk_index(index);
@@ -1371,6 +1374,9 @@ INT wifi_hal_createVAP(wifi_radio_index_t index, wifi_vap_info_map_t *map)
     RADIO_INDEX_ASSERT(index);
     NULL_PTR_ASSERT(map);
 
+    strncpy(map->vap_array[0].u.bss_info.ssid, "BPI-RDKB-MLO-AA", sizeof(map->vap_array[0].u.bss_info.ssid)-1);
+    wifi_hal_error_print("%s:%d: set ssid\n", __func__, __LINE__);
+
     radio = get_radio_by_rdk_index(index);
     if (radio == NULL) {
         wifi_hal_error_print("%s:%d: radio index:%d failed not find radio\n", __func__, __LINE__,
@@ -1394,6 +1400,17 @@ INT wifi_hal_createVAP(wifi_radio_index_t index, wifi_vap_info_map_t *map)
     for (i = 0; i < map->num_vaps; i++) {
         vap = &map->vap_array[i];
 
+        if (map->vap_array[i].vap_index != 0) {
+            continue;
+        }
+
+    // if (map->vap_array[i].vap_index == 2) {
+    //     wifi_hal_error_print("%s:%d: set iot\n", __func__, __LINE__);
+    //     map->vap_array[i].u.bss_info.enabled = 1;
+    //     map->vap_array[i].u.bss_info.showSsid = 1;
+    //     strncpy(map->vap_array[i].u.bss_info.ssid, "BPI-RDKB-MLO-IOT", sizeof(map->vap_array[i].u.bss_info.ssid)-1);
+    // }
+        
         wifi_hal_info_print("%s:%d: vap index:%d vap_name = %s create vap\n", __func__, __LINE__,
             vap->vap_index, vap->vap_name);
 
@@ -1730,6 +1747,9 @@ INT wifi_hal_createVAP(wifi_radio_index_t index, wifi_vap_info_map_t *map)
             radio->index);
         set_vap_params_fn(index, map);
     }
+
+    //XXX
+    g_wifi_hal.vap_init_done = true;
 
     return ret;
 }
