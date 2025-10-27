@@ -102,7 +102,7 @@ static unsigned char llc_info[] = {0xaa, 0xaa, 0x03, 0x00,0x00,0x00,0x88,0x8e};
 #endif // defined(WIFI_EMULATOR_CHANGE) ||  defined(CONFIG_WIFI_EMULATOR_EXT_AGENT)
 
 static int scan_info_handler(struct nl_msg *msg, void *arg);
-static void nl80211_unregister_mgmt_frames(wifi_interface_info_t *interface);
+// static void nl80211_unregister_mgmt_frames(wifi_interface_info_t *interface);
 int wifi_drv_link_add(void *priv, u8 link_id, const u8 *addr, void *bss_ctx);
 
 struct family_data {
@@ -3219,9 +3219,9 @@ void *nl_recv_func(void *arg)
                     if_nametoindex(interface->name), interface->nl_event_fd, res, nl_geterror(res),
                     errno, strerror(errno));
                 /* workaround for socket error issue */
-		wifi_hal_error_print("%s:%d: reopen NL socket\n", __func__, __LINE__);
-		nl80211_unregister_mgmt_frames(interface);
-		nl80211_register_mgmt_frames(interface);
+		// wifi_hal_error_print("%s:%d: reopen NL socket\n", __func__, __LINE__);
+		// nl80211_unregister_mgmt_frames(interface);
+		// nl80211_register_mgmt_frames(interface);
             }
         }
 
@@ -3468,6 +3468,75 @@ static int nl80211_nlmsg_read(struct nl_sock *sock, struct nl_cb *cb)
     return ret;
 }
 
+#include <netlink/msg.h>
+#include <netlink/netlink.h>
+#include <netlink/genl/genl.h>
+#include <netlink/genl/ctrl.h>
+
+int get_cmd_from_nl_msg(struct nl_msg *msg) {
+    struct nlmsghdr *nlh;
+    struct genlmsghdr *genl_hdr;
+
+    // Extract the Netlink header
+    nlh = nlmsg_hdr(msg);
+
+    // Sanity check: ensure it's a Generic Netlink message
+    if (nlh->nlmsg_type < NLMSG_MIN_TYPE) {
+        fprintf(stderr, "Invalid nlmsg_type: %d\n", nlh->nlmsg_type);
+        return -1;
+    }
+
+    // Get the generic Netlink header from the payload
+    genl_hdr = (struct genlmsghdr *)nlmsg_data(nlh);
+
+    // Extract the command
+    return genl_hdr->cmd;
+}
+
+#include <sys/socket.h>
+#include <linux/netlink.h>
+#include <string.h>
+#include <stdio.h>
+#include <unistd.h>
+
+int send_netlink_raw(unsigned char *buf, size_t len) {
+    struct sockaddr_nl dest_addr = {};
+    struct iovec iov = {};
+    struct msghdr msg = {};
+    static int sock_fd = -1;
+
+    if (sock_fd == -1) {
+        sock_fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_GENERIC); // or NETLINK_ROUTE, etc.
+        if (sock_fd < 0) {
+             wifi_hal_error_print("%s:%d: Failed to create socket\n", __func__, __LINE__);
+             return -1;
+        }
+    }
+
+    memset(&dest_addr, 0, sizeof(dest_addr));
+    dest_addr.nl_family = AF_NETLINK;
+    dest_addr.nl_pid = 0; // Kernel
+    dest_addr.nl_groups = 0;
+
+    iov.iov_base = buf;
+    iov.iov_len = len;
+
+    memset(&msg, 0, sizeof(msg));
+    msg.msg_name = &dest_addr;
+    msg.msg_namelen = sizeof(dest_addr);
+    msg.msg_iov = &iov;
+    msg.msg_iovlen = 1;
+
+    ssize_t ret = sendmsg(sock_fd, &msg, 0);
+    if (ret < 0) {
+        wifi_hal_error_print("%s:%d: Failed to send NL message\n", __func__, __LINE__);
+        return -1;
+    }
+
+    wifi_hal_info_print("%s:%d: Sent %ld bytes to Netlink\n", __func__, __LINE__, ret);
+    return 0;
+}
+
 static int execute_send_and_recv(struct nl_cb *cb_ctx,
              struct nl_handle *nl_handle, struct nl_msg *msg,
              int (*valid_handler)(struct nl_msg *, void *),
@@ -3475,7 +3544,7 @@ static int execute_send_and_recv(struct nl_cb *cb_ctx,
              int (*valid_finish_handler)(struct nl_msg *, void *),
              void *valid_finish_data)
 {
-    struct nl_cb *cb;
+    struct nl_cb *cb = NULL;
     wifi_finish_data_t  *finish_arg;
     int err = -1, opt;
 
@@ -7057,6 +7126,11 @@ int nl80211_init_primary_interfaces()
     wifi_interface_info_t *interface;
 
     for (i = 0; i < g_wifi_hal.num_radios; i++) {
+
+        if (i != 2) {
+            continue;
+        }
+
         radio = get_radio_by_rdk_index(i);
         if (radio->radio_presence == false) {
             wifi_hal_error_print("%s:%d: Skip the Radio %d .This is sleeping in ECO mode \n", __func__, __LINE__, radio->index);
@@ -7839,25 +7913,25 @@ int nl80211_register_mgmt_frames(wifi_interface_info_t *interface)
     return 0;
 }
 
-static void nl80211_unregister_mgmt_frames(wifi_interface_info_t *interface)
-{
-    if (interface->mgmt_frames_registered == 0) {
-        wifi_hal_dbg_print("%s:%d: interface:%s mgmt frames not registered\n", __func__, __LINE__,
-            interface->name);
-        return;
-    }
+// static void nl80211_unregister_mgmt_frames(wifi_interface_info_t *interface)
+// {
+//     if (interface->mgmt_frames_registered == 0) {
+//         wifi_hal_dbg_print("%s:%d: interface:%s mgmt frames not registered\n", __func__, __LINE__,
+//             interface->name);
+//         return;
+//     }
 
-    wifi_hal_info_print("%s:%d: interface:%s ifindex:%d nl sock:%d\n", __func__, __LINE__,
-        interface->name, interface->index, interface->nl_event_fd);
+//     wifi_hal_info_print("%s:%d: interface:%s ifindex:%d nl sock:%d\n", __func__, __LINE__,
+//         interface->name, interface->index, interface->nl_event_fd);
 
-    nl_destroy_handles(&interface->nl_event);
-    interface->nl_event = NULL;
-    nl_cb_put(interface->nl_cb);
-    interface->nl_cb = NULL;
-    interface->nl_event_fd = -1;
+//     nl_destroy_handles(&interface->nl_event);
+//     interface->nl_event = NULL;
+//     nl_cb_put(interface->nl_cb);
+//     interface->nl_cb = NULL;
+//     interface->nl_event_fd = -1;
 
-    interface->mgmt_frames_registered = 0;
-}
+//     interface->mgmt_frames_registered = 0;
+// }
 
 int wifi_hal_configure_sta_4addr_to_bridge(wifi_interface_info_t *interface, int add)
 {
@@ -15932,56 +16006,11 @@ static void wifi_hal_wps_cancel_on_other_radios(wifi_interface_info_t *interface
     }
 }
 
-static wifi_wps_ev_t convert_wps_event(unsigned int event)
-{
-    switch (event) {
-    case WPS_EV_M2D:
-        return wifi_wps_ev_m2d;
-    case WPS_EV_FAIL:
-        return wifi_wps_ev_fail;
-    case WPS_EV_SUCCESS:
-        return wifi_wps_ev_success;
-    case WPS_EV_PWD_AUTH_FAIL:
-        return wifi_wps_ev_pwd_auth_fail;
-    case WPS_EV_PBC_OVERLAP:
-        return wifi_wps_ev_pbc_overlap;
-    case WPS_EV_PBC_TIMEOUT:
-        return wifi_wps_ev_pbc_timeout;
-    case WPS_EV_PBC_ACTIVE:
-        return wifi_wps_ev_pbc_active;
-    case WPS_EV_PBC_DISABLE:
-        return wifi_wps_ev_pbc_disable;
-    case WPS_EV_PIN_TIMEOUT:
-        return wifi_wps_ev_pin_timeout;
-    case WPS_EV_PIN_DISABLE:
-        return wifi_wps_ev_pin_disable;
-    case WPS_EV_PIN_ACTIVE:
-        return wifi_wps_ev_pin_active;
-    case WPS_EV_ER_AP_ADD:
-        return wifi_wps_ev_er_ap_add;
-    case WPS_EV_ER_AP_REMOVE:
-        return wifi_wps_ev_er_ap_remove;
-    case WPS_EV_ER_ENROLLEE_ADD:
-        return wifi_wps_ev_er_enrollee_add;
-    case WPS_EV_ER_ENROLLEE_REMOVE:
-        return wifi_wps_ev_er_enrollee_remove;
-    case WPS_EV_ER_AP_SETTINGS:
-        return wifi_wps_ev_er_ap_settings;
-    case WPS_EV_ER_SET_SELECTED_REGISTRAR:
-        return wifi_wps_ev_er_set_selected_registrar;
-    case WPS_EV_AP_PIN_SUCCESS:
-        return wifi_wps_ev_ap_pin_success;
-    default:
-        return wifi_wps_ev_fail;
-    }
-}
-
 int wifi_drv_wps_event_notify_cb(void *ctx, unsigned int event, void *data)
 {
     wifi_interface_info_t *interface;
     wifi_vap_info_t *vap;
     wifi_wps_event_t event_data;
-    wifi_device_callbacks_t *callbacks;
 
     memset(&event_data, 0, sizeof(event_data));
 
@@ -15995,20 +16024,13 @@ int wifi_drv_wps_event_notify_cb(void *ctx, unsigned int event, void *data)
         }
     }
 
-#if !defined(TARGET_GEMINI7_2)
     if (event == WPS_EV_SUCCESS) {
         wifi_hal_wps_cancel_on_other_radios(interface);
     }
-#endif
 
     event_data.event = event;
     event_data.wps_data = (unsigned char *)data;
     wifi_hal_wps_event(event_data);
-
-    callbacks = get_hal_device_callbacks();
-    if ((callbacks != NULL) && (callbacks->wps_event_callback != NULL)) {
-        callbacks->wps_event_callback(event_data.vap_index, convert_wps_event(event));
-    }
 
     return 0;
 }

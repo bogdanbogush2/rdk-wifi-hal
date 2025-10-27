@@ -758,6 +758,24 @@ INT wifi_hal_setRadioOperatingParameters(wifi_radio_index_t index, wifi_radio_op
     RADIO_INDEX_ASSERT(index);
     NULL_PTR_ASSERT(operationParam);
 
+//XXX
+//    if (operationParam->band == WIFI_FREQUENCY_2_4_BAND) {
+//        operationParam->channel = 1;
+//        operationParam->channelWidth = WIFI_CHANNELBANDWIDTH_40MHZ;
+//    }
+//    if (operationParam->band == WIFI_FREQUENCY_5_BAND) {
+//        operationParam->channel = 36;
+//        operationParam->channelWidth = WIFI_CHANNELBANDWIDTH_80MHZ;
+//    }
+   if (operationParam->band == WIFI_FREQUENCY_6_BAND) {
+       operationParam->channel = 37;
+       operationParam->channelWidth = WIFI_CHANNELBANDWIDTH_160MHZ;
+   }
+
+    if (index != 2) {
+        return 0;
+    }
+
 #if defined(CONFIG_WIFI_EMULATOR) || defined(CONFIG_WIFI_EMULATOR_EXT_AGENT)
     radio = get_radio_by_rdk_index(index);
     if (radio == NULL) {
@@ -1356,6 +1374,9 @@ INT wifi_hal_createVAP(wifi_radio_index_t index, wifi_vap_info_map_t *map)
     RADIO_INDEX_ASSERT(index);
     NULL_PTR_ASSERT(map);
 
+    strncpy(map->vap_array[0].u.bss_info.ssid, "BPI-RDKB-MLO-AP-AA", sizeof(map->vap_array[0].u.bss_info.ssid)-1);
+    wifi_hal_error_print("%s:%d: set ssid\n", __func__, __LINE__);
+
     radio = get_radio_by_rdk_index(index);
     if (radio == NULL) {
         wifi_hal_error_print("%s:%d: radio index:%d failed not find radio\n", __func__, __LINE__,
@@ -1378,6 +1399,11 @@ INT wifi_hal_createVAP(wifi_radio_index_t index, wifi_vap_info_map_t *map)
     // now create vaps on the interfaces
     for (i = 0; i < map->num_vaps; i++) {
         vap = &map->vap_array[i];
+
+
+        if (map->vap_array[i].vap_index != 16) {
+            continue;
+        }
 
         wifi_hal_info_print("%s:%d: vap index:%d vap_name = %s create vap\n", __func__, __LINE__,
             vap->vap_index, vap->vap_name);
@@ -1715,6 +1741,9 @@ INT wifi_hal_createVAP(wifi_radio_index_t index, wifi_vap_info_map_t *map)
             radio->index);
         set_vap_params_fn(index, map);
     }
+
+    //XXX
+    g_wifi_hal.vap_init_done = true;
 
     return ret;
 }
@@ -4338,20 +4367,6 @@ void wifi_hal_scanResults_callback_register(wifi_scanResults_callback func)
     callbacks->scan_result_callback = func;
 
     return;
-}
-
-INT wifi_wpsEvent_callback_register(wifi_wpsEvent_callback func)
-{
-    wifi_device_callbacks_t *callbacks;
-
-    callbacks = get_hal_device_callbacks();
-    if (callbacks == NULL) {
-        return RETURN_ERR;
-    }
-
-    callbacks->wps_event_callback = func;
-
-    return RETURN_OK;
 }
 
 INT wifi_hal_analytics_callback_register(wifi_analytics_callback l_callback_cb)

@@ -170,7 +170,6 @@ typedef struct {
     wifi_analytics_callback                 analytics_callback;
     wifi_csi_callback                       csi_callback;
     wifi_steering_eventCB_t                 steering_event_callback;
-    wifi_wpsEvent_callback                  wps_event_callback;
 } wifi_device_callbacks_t;
 
 
