@@ -6401,7 +6401,8 @@ static int kick_device_handler(struct nl_msg *msg, void *arg)
     return NL_SKIP;
 }
 
-static int notify_sta_listeners(wifi_interface_info_t *interface, mac_address_t sta_mac, int rssi)
+static int notify_sta_listeners(wifi_interface_info_t *interface, mac_address_t sta_mac, int rssi,
+    uint32_t ap_map)
 {
     mac_addr_str_t sta_mac_str;
     wifi_device_callbacks_t *callbacks;
@@ -6412,6 +6413,8 @@ static int notify_sta_listeners(wifi_interface_info_t *interface, mac_address_t 
     memcpy(associated_dev.cli_MACAddress, sta_mac, sizeof(mac_address_t));
     associated_dev.cli_RSSI = rssi;
     associated_dev.cli_Active = true;
+    // UINT cli_APsMap;   /**< Bitmap representing the Access Points (APs) the associated device is connected to. Each bit represents an AP index. For example, if the associated device is connected to APs with indices 0 and 2, the value will be 5 (0b101). */
+    associated_dev.cli_APsMap = ap_map;
 
     wifi_hal_dbg_print("%s:%d: Notifying STA listeners for %s on VAP index %d\n", __func__,
         __LINE__, to_mac_str(sta_mac, sta_mac_str), vap->vap_index);
@@ -6490,6 +6493,7 @@ static int get_sta_handler(struct nl_msg *msg, void *arg)
     mac_address_t sta_mac;
     mac_addr_str_t sta_mac_str;
     bool has_link_stats = false;
+    uint32_t ap_map = 0;
 
     interface = (wifi_interface_info_t *)arg;
 
@@ -6582,7 +6586,8 @@ static int get_sta_handler(struct nl_msg *msg, void *arg)
 
                     link_interface = wifi_hal_get_mld_interface_by_link_id(interface, link_id);
                     if (link_interface != NULL) {
-                        notify_sta_listeners(link_interface, sta_mac, link_rssi);
+                        ap_map |= (1 << link_interface->vap_info.vap_index);
+                        notify_sta_listeners(link_interface, sta_mac, link_rssi, ap_map);
                     }
                 }
             }
@@ -6607,7 +6612,8 @@ static int get_sta_handler(struct nl_msg *msg, void *arg)
 
     wifi_hal_dbg_print("%s:%d: RSSI %d\n", __func__, __LINE__, rssi);
 
-    notify_sta_listeners(interface, sta_mac, rssi);
+    ap_map |= (1 << interface->vap_info.vap_index);
+    notify_sta_listeners(interface, sta_mac, rssi, ap_map);
 
     return NL_SKIP;
 }
